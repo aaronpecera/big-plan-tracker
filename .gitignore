@@ -1,0 +1,76 @@
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Composer dependencies
+/vendor/
+composer.lock
+
+# Node.js dependencies (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+error.log
+access.log
+
+# Cache and temporary files
+cache/
+tmp/
+temp/
+*.tmp
+*.cache
+
+# Upload directories
+uploads/
+files/
+storage/
+
+# Backup files
+*.bak
+*.backup
+*.sql
+
+# PHP specific
+*.php~
+.phpunit.result.cache
+
+# Session files
+sessions/
+
+# Configuration files with sensitive data
+config/database.php
+config/secrets.php
+
+# Build artifacts
+build/
+dist/
+
+# Coverage reports
+coverage/
+*.coverage
+
+# Local development files
+.local
+.dev

@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+DEPLOYMENT_GUIDE.html
+
+# Development files
+.env
+.env.local
+.env.example
+
+# Dependencies
+node_modules/
+vendor/
+
+# Logs
+logs/
+*.log
+
+# Cache
+cache/
+temp/
+tmp/
+
+# Uploads
+uploads/
+
+# Backups
+backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.tar.gz
+*.zip
