@@ -10,8 +10,8 @@ header('Access-Control-Allow-Origin: *');
 // Load autoloader
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-// Load environment variables
-if (file_exists(__DIR__ . '/../../.env')) {
+// Load environment variables only in development
+if (file_exists(__DIR__ . '/../../.env') && getenv('APP_ENV') !== 'production') {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../..');
     $dotenv->load();
 }

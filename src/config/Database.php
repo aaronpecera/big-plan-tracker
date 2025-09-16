@@ -42,7 +42,7 @@ class DatabaseConnection
         return self::$instance;
     }
     
-    public function getDatabase(): Database
+    public function getDatabase(): MongoDatabase
     {
         return $this->database;
     }
