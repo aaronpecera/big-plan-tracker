@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIG PLAN - Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/myriad-font.css">
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <script src="/assets/js/page-transitions.js"></script>
+</head>
+<body class="myriad-font">
+    <div class="macos-dashboard">
+        <!-- Header -->
+        <div class="macos-dashboard-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: var(--macos-blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">
+                    🚀
+                </div>
+                <div>
+                    <h1 class="macos-dashboard-title">BIG PLAN</h1>
+                    <p style="font-size: var(--font-size-sm); color: var(--macos-gray-500); margin: 0;">Sistema de Gestión de Tareas</p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 32px; height: 32px; background: var(--macos-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
+                        A
+                    </div>
+                    <div>
+                        <div style="font-weight: 500; color: var(--macos-gray-900); font-size: var(--font-size-sm);">Admin</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--macos-gray-500); text-transform: uppercase;">Administrador</div>
+                    </div>
+                </div>
+                <button class="macos-button macos-button-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-container">
+            <!-- Stats Grid -->
+            <div class="macos-grid">
+                <div class="macos-stat-card">
+                    <div class="macos-stat-title">
+                        <i class="fas fa-tasks"></i> Tareas Totales
+                    </div>
+                    <div class="macos-stat-value" id="totalTasks">0</div>
+                    <div class="macos-stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +12% este mes
+                    </div>
+                </div>
+
+                <div class="macos-stat-card">
+                    <div class="macos-stat-title">
+                        <i class="fas fa-check-circle"></i> Completadas
+                    </div>
+                    <div class="macos-stat-value" id="completedTasks">0</div>
+                    <div class="macos-stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +8% este mes
+                    </div>
+                </div>
+
+                <div class="macos-stat-card">
+                    <div class="macos-stat-title">
+                        <i class="fas fa-clock"></i> En Progreso
+                    </div>
+                    <div class="macos-stat-value" id="inProgressTasks">0</div>
+                    <div class="macos-stat-change">
+                        <i class="fas fa-minus"></i> Sin cambios
+                    </div>
+                </div>
+
+                <div class="macos-stat-card">
+                    <div class="macos-stat-title">
+                        <i class="fas fa-users"></i> Usuarios Activos
+                    </div>
+                    <div class="macos-stat-value" id="activeUsers">0</div>
+                    <div class="macos-stat-change positive">
+                        <i class="fas fa-arrow-up"></i> +3 nuevos
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Tasks -->
+            <div class="macos-card">
+                <h3 style="font-size: var(--font-size-lg); font-weight: 600; color: var(--macos-gray-900); margin-bottom: var(--spacing-4); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-list"></i> Tareas Recientes
+                </h3>
+                <div id="recentTasks" class="loading" style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando tareas...
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="macos-quick-actions">
+                <h3>Acciones Rápidas</h3>
+                <div class="macos-actions-grid">
+                    <a href="#" class="macos-action-button" onclick="createTask()">
+                        <i class="fas fa-plus"></i> Nueva Tarea
+                    </a>
+                    <a href="#" class="macos-action-button" onclick="viewProjects()">
+                        <i class="fas fa-folder"></i> Ver Proyectos
+                    </a>
+                    <a href="#" class="macos-action-button" onclick="viewReports()">
+                        <i class="fas fa-chart-bar"></i> Reportes
+                    </a>
+                    <a href="#" class="macos-action-button" onclick="manageUsers()">
+                        <i class="fas fa-users-cog"></i> Gestionar Usuarios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadDashboardData();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/views/login.html';
+                return;
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load tasks
+                const tasksResponse = await fetch('/api/tasks', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    }
+                });
+                
+                if (tasksResponse.ok) {
+                    const tasksData = await tasksResponse.json();
+                    updateTaskStats(tasksData);
+                    displayRecentTasks(tasksData);
+                } else {
+                    throw new Error('Failed to load tasks');
+                }
+
+                // Load users
+                const usersResponse = await fetch('/api/users', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                    }
+                });
+                
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    updateUserStats(usersData);
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('recentTasks').innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-600);">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar los datos
+                    </div>
+                `;
+            }
+        }
+
+        function updateTaskStats(tasks) {
+            const total = tasks.length;
+            const completed = tasks.filter(task => task.status === 'completed').length;
+            const inProgress = tasks.filter(task => task.status === 'in_progress').length;
+
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('inProgressTasks').textContent = inProgress;
+        }
+
+        function updateUserStats(users) {
+            const activeUsers = users.filter(user => user.active).length;
+            document.getElementById('activeUsers').textContent = activeUsers;
+        }
+
+        function displayRecentTasks(tasks) {
+            const recentTasksContainer = document.getElementById('recentTasks');
+            
+            if (tasks.length === 0) {
+                recentTasksContainer.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay tareas disponibles
+                    </div>
+                `;
+                return;
+            }
+
+            const recentTasks = tasks.slice(0, 5); // Show only 5 most recent
+            const tasksHTML = recentTasks.map(task => {
+                const statusColor = {
+                    'completed': 'var(--macos-green)',
+                    'in_progress': 'var(--macos-blue)',
+                    'pending': 'var(--macos-gray-400)'
+                };
+
+                const statusText = {
+                    'completed': 'Completada',
+                    'in_progress': 'En Progreso',
+                    'pending': 'Pendiente'
+                };
+
+                return `
+                    <div style="display: flex; align-items: center; gap: 12px; padding: var(--spacing-3) 0; border-bottom: 1px solid var(--macos-gray-200);">
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor[task.status] || statusColor.pending}; flex-shrink: 0;"></div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; color: var(--macos-gray-900); margin-bottom: 2px;">${task.title || 'Tarea sin título'}</div>
+                            <div style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                ${statusText[task.status] || 'Pendiente'} • ${task.created_at ? new Date(task.created_at).toLocaleDateString() : 'Fecha no disponible'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            recentTasksContainer.innerHTML = tasksHTML;
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                // Clear any stored session data
+                localStorage.removeItem('authToken');
+                sessionStorage.clear();
+                
+                // Redirect to login with smooth transition
+                if (window.PageTransitions) {
+                    PageTransitions.navigateTo('/views/login.html');
+                } else {
+                    window.location.href = '/views/login.html';
+                }
+            }
+        }
+
+        function createTask() {
+            alert('Función de crear tarea - En desarrollo');
+        }
+
+        function viewProjects() {
+            alert('Función de ver proyectos - En desarrollo');
+        }
+
+        function viewReports() {
+            alert('Función de reportes - En desarrollo');
+        }
+
+        function manageUsers() {
+            alert('Función de gestionar usuarios - En desarrollo');
+        }
+    </script>
+</body>
+</html>
