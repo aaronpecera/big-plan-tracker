@@ -95,7 +95,7 @@ switch (true) {
     case strpos($path, 'api/') === 0:
         // API routes
         $api_path = substr($path, 4); // Remove 'api/' prefix
-        $api_file = __DIR__ . '/../src/api/' . $api_path . '.php';
+        $api_file = __DIR__ . '/api/' . $api_path . '.php';
         
         if (file_exists($api_file)) {
             include $api_file;
