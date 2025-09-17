@@ -90,7 +90,11 @@
 
             <!-- Filters -->
             <div class="macos-card" style="margin-bottom: var(--spacing-6);">
-                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Buscar:</label>
+                    <input type="text" id="searchFilter" placeholder="Buscar por nombre o email..." 
+                           onkeyup="filterUsers()" class="macos-input" style="min-width: 200px;">
+                    
                     <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por rol:</label>
                     <select id="roleFilter" onchange="filterUsers()" class="macos-input" style="width: auto;">
                         <option value="">Todos</option>
@@ -98,6 +102,7 @@
                         <option value="user">Usuario</option>
                         <option value="manager">Manager</option>
                     </select>
+                    
                     <label style="font-weight: 500; color: var(--macos-gray-700);">Estado:</label>
                     <select id="statusFilter" onchange="filterUsers()" class="macos-input" style="width: auto;">
                         <option value="">Todos</option>
@@ -297,13 +302,24 @@
         function filterUsers() {
             const roleFilter = document.getElementById('roleFilter').value;
             const statusFilter = document.getElementById('statusFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
             
             let filteredUsers = allUsers;
             
+            // Filter by search term
+            if (searchFilter) {
+                filteredUsers = filteredUsers.filter(user => {
+                    return user.username.toLowerCase().includes(searchFilter) ||
+                           (user.email && user.email.toLowerCase().includes(searchFilter));
+                });
+            }
+            
+            // Filter by role
             if (roleFilter) {
                 filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
             }
             
+            // Filter by status
             if (statusFilter) {
                 if (statusFilter === 'active') {
                     filteredUsers = filteredUsers.filter(user => user.active !== false);

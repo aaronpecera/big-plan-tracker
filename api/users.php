@@ -92,7 +92,33 @@ try {
             // Listar todos los usuarios
             echo json_encode([
                 'success' => true,
-                'data' => $sampleUsers
+                'users' => $sampleUsers
+            ]);
+            break;
+            
+        case 'stats':
+            // Estadísticas de usuarios
+            $totalUsers = count($sampleUsers);
+            $activeUsers = count(array_filter($sampleUsers, function($user) {
+                return $user['active'] === true;
+            }));
+            $adminUsers = count(array_filter($sampleUsers, function($user) {
+                return $user['role'] === 'admin';
+            }));
+            $recentUsers = count(array_filter($sampleUsers, function($user) {
+                $createdDate = new DateTime($user['created_at']);
+                $thirtyDaysAgo = new DateTime('-30 days');
+                return $createdDate >= $thirtyDaysAgo;
+            }));
+            
+            echo json_encode([
+                'success' => true,
+                'stats' => [
+                    'total_users' => $totalUsers,
+                    'active_users' => $activeUsers,
+                    'admin_users' => $adminUsers,
+                    'recent_users' => $recentUsers
+                ]
             ]);
             break;
             

@@ -53,11 +53,11 @@
                 </div>
                 <div class="macos-stat-card">
                     <div class="stat-icon" style="background: var(--macos-orange);">
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-content">
-                        <div class="stat-number" id="premiumCompanies">0</div>
-                        <div class="stat-label">Plan Premium</div>
+                        <div class="stat-number" id="totalUsers">0</div>
+                        <div class="stat-label">Total Usuarios</div>
                     </div>
                 </div>
                 <div class="macos-stat-card">
@@ -91,19 +91,14 @@
             <!-- Filters -->
             <div class="macos-card" style="margin-bottom: var(--spacing-6);">
                 <div style="display: flex; gap: var(--spacing-4); align-items: center;">
-                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por plan:</label>
-                    <select id="planFilter" onchange="filterCompanies()" class="macos-input" style="width: auto;">
-                        <option value="">Todos</option>
-                        <option value="basic">Básico</option>
-                        <option value="premium">Premium</option>
-                        <option value="enterprise">Enterprise</option>
-                    </select>
-                    <label style="font-weight: 500; color: var(--macos-gray-700);">Estado:</label>
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por estado:</label>
                     <select id="statusFilter" onchange="filterCompanies()" class="macos-input" style="width: auto;">
                         <option value="">Todos</option>
                         <option value="active">Activas</option>
                         <option value="inactive">Inactivas</option>
                     </select>
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Buscar:</label>
+                    <input type="text" id="searchFilter" onkeyup="filterCompanies()" placeholder="Buscar empresa..." class="macos-input" style="width: 200px;">
                 </div>
             </div>
 
@@ -211,7 +206,7 @@
         function updateStats(stats) {
             document.getElementById('totalCompanies').textContent = stats.total_companies || 0;
             document.getElementById('activeCompanies').textContent = stats.active_companies || 0;
-            document.getElementById('premiumCompanies').textContent = stats.premium_companies || 0;
+            document.getElementById('totalUsers').textContent = stats.total_users || 0;
             document.getElementById('recentCompanies').textContent = stats.recent_companies || 0;
         }
 
@@ -228,18 +223,6 @@
             }
 
             const companiesHTML = companies.map(company => {
-                const planColors = {
-                    'basic': 'var(--macos-blue)',
-                    'premium': 'var(--macos-orange)',
-                    'enterprise': 'var(--macos-purple)'
-                };
-
-                const planText = {
-                    'basic': 'Básico',
-                    'premium': 'Premium',
-                    'enterprise': 'Enterprise'
-                };
-
                 const statusColor = company.active !== false ? 'var(--macos-green)' : 'var(--macos-gray-400)';
                 const statusText = company.active !== false ? 'Activa' : 'Inactiva';
 
@@ -247,17 +230,13 @@
                     <div class="company-item" style="border: 1px solid var(--macos-gray-200); border-radius: var(--border-radius); padding: var(--spacing-4); margin-bottom: var(--spacing-3);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div style="flex: 1; display: flex; align-items: center; gap: var(--spacing-4);">
-                                <div style="width: 60px; height: 60px; border-radius: var(--border-radius); background: linear-gradient(135deg, ${planColors[company.plan] || planColors.basic}, ${planColors[company.plan] || planColors.basic}80); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">
+                                <div style="width: 60px; height: 60px; border-radius: var(--border-radius); background: linear-gradient(135deg, var(--macos-blue), var(--macos-blue)80); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">
                                     <i class="fas fa-building"></i>
                                 </div>
                                 <div style="flex: 1;">
                                     <h4 style="margin: 0 0 var(--spacing-1) 0; color: var(--macos-gray-900);">${company.name}</h4>
                                     <p style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${company.email || 'Sin email'}</p>
                                     <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
-                                        <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); padding: 2px 8px; background: ${planColors[company.plan] || planColors.basic}20; color: ${planColors[company.plan] || planColors.basic}; border-radius: 12px; font-size: var(--font-size-xs); font-weight: 500;">
-                                            <i class="fas fa-crown"></i>
-                                            ${company.plan ? company.plan.charAt(0).toUpperCase() + company.plan.slice(1) : 'Básico'}
-                                        </span>
                                         <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); color: ${statusColor}; font-size: var(--font-size-xs); font-weight: 500;">
                                             <i class="fas fa-circle" style="font-size: 6px;"></i>
                                             ${statusText}
@@ -334,7 +313,6 @@
             const email = prompt('Email:');
             const phone = prompt('Teléfono:');
             const address = prompt('Dirección:');
-            const plan = prompt('Plan (basic, premium, enterprise):', 'basic');
             
             // Cost per hour input
             let costPerHour = prompt('Costo por hora (€):', '25.00');
@@ -355,7 +333,6 @@
                 email: email || '',
                 phone: phone || '',
                 address: address || '',
-                plan: plan || 'basic',
                 cost_per_hour: costPerHour,
                 currency: currency || 'EUR'
             };
@@ -392,7 +369,6 @@
             companyInfo += `Email: ${company.email || 'Sin email'}\n`;
             companyInfo += `Teléfono: ${company.phone || 'Sin teléfono'}\n`;
             companyInfo += `Dirección: ${company.address || 'Sin dirección'}\n`;
-            companyInfo += `Plan: ${company.plan || 'basic'}\n`;
             companyInfo += `Costo por hora: ${company.cost_per_hour ? company.cost_per_hour + ' ' + (company.currency || 'EUR') : 'No configurado'}\n`;
             companyInfo += `Moneda: ${company.currency || 'EUR'}\n`;
             companyInfo += `Estado: ${company.active !== false ? 'Activa' : 'Inactiva'}\n`;
@@ -411,7 +387,6 @@
             const email = prompt('Email:', company.email || '');
             const phone = prompt('Teléfono:', company.phone || '');
             const address = prompt('Dirección:', company.address || '');
-            const plan = prompt('Plan (basic, premium, enterprise):', company.plan || 'basic');
             
             // Cost per hour input
             let costPerHour = prompt('Costo por hora (€):', company.cost_per_hour || '25.00');
@@ -495,6 +470,35 @@
                 console.error('Error:', error);
                 alert('Error al actualizar la empresa');
             });
+        }
+
+        function filterCompanies() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+            
+            let filteredCompanies = allCompanies;
+            
+            // Filter by status
+            if (statusFilter) {
+                filteredCompanies = filteredCompanies.filter(company => {
+                    if (statusFilter === 'active') {
+                        return company.active !== false;
+                    } else if (statusFilter === 'inactive') {
+                        return company.active === false;
+                    }
+                    return true;
+                });
+            }
+            
+            // Filter by search term
+            if (searchFilter) {
+                filteredCompanies = filteredCompanies.filter(company => {
+                    return company.name.toLowerCase().includes(searchFilter) ||
+                           (company.email && company.email.toLowerCase().includes(searchFilter));
+                });
+            }
+            
+            displayCompanies(filteredCompanies);
         }
 
         async function logout() {
