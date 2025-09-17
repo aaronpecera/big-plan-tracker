@@ -1,0 +1,535 @@
+/* macOS Style CSS - Clean and Elegant Interface */
+
+/* Import Myriad font family */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* CSS Variables for macOS Theme */
+:root {
+  /* macOS Colors */
+  --macos-white: #ffffff;
+  --macos-gray-50: #f9fafb;
+  --macos-gray-100: #f3f4f6;
+  --macos-gray-200: #e5e7eb;
+  --macos-gray-300: #d1d5db;
+  --macos-gray-400: #9ca3af;
+  --macos-gray-500: #6b7280;
+  --macos-gray-600: #4b5563;
+  --macos-gray-700: #374151;
+  --macos-gray-800: #1f2937;
+  --macos-gray-900: #111827;
+  
+  /* macOS Blue (System Blue) */
+  --macos-blue: #007aff;
+  --macos-blue-hover: #0056cc;
+  --macos-blue-light: #e6f3ff;
+  
+  /* macOS Green */
+  --macos-green: #34c759;
+  --macos-green-hover: #28a745;
+  
+  /* macOS Red */
+  --macos-red: #ff3b30;
+  --macos-red-hover: #d70015;
+  
+  /* Typography */
+  --font-family: 'Myriad Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  
+  /* Spacing */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--macos-gray-900);
+  background-color: var(--macos-gray-50);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* macOS Container */
+.macos-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-6);
+}
+
+/* macOS Card */
+.macos-card {
+  background: var(--macos-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--macos-gray-200);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+  transition: all 0.2s ease-in-out;
+}
+
+.macos-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* macOS Header */
+.macos-header {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--macos-gray-200);
+  padding: var(--spacing-4) var(--spacing-6);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.macos-header h1 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--macos-gray-900);
+}
+
+/* macOS Buttons */
+.macos-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  min-height: 32px;
+}
+
+.macos-button-primary {
+  background: var(--macos-blue);
+  color: var(--macos-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.macos-button-primary:hover {
+  background: var(--macos-blue-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.macos-button-secondary {
+  background: var(--macos-white);
+  color: var(--macos-gray-700);
+  border: 1px solid var(--macos-gray-300);
+  box-shadow: var(--shadow-sm);
+}
+
+.macos-button-secondary:hover {
+  background: var(--macos-gray-50);
+  border-color: var(--macos-gray-400);
+  box-shadow: var(--shadow-md);
+}
+
+.macos-button-danger {
+  background: var(--macos-red);
+  color: var(--macos-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.macos-button-danger:hover {
+  background: var(--macos-red-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* macOS Form Elements */
+.macos-input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--macos-gray-300);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  background: var(--macos-white);
+  color: var(--macos-gray-600);
+  transition: all 0.15s ease-in-out;
+  min-height: 44px;
+}
+
+.macos-input:focus {
+  outline: none;
+  border-color: var(--macos-gray-600);
+  box-shadow: 0 0 0 3px var(--macos-gray-200);
+}
+
+.macos-input::placeholder {
+  color: var(--macos-gray-500);
+}
+
+.macos-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--macos-gray-700);
+  margin-bottom: var(--spacing-2);
+}
+
+.macos-form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+/* macOS Login Specific */
+.macos-login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--macos-gray-50) 0%, var(--macos-gray-100) 100%);
+  padding: var(--spacing-6);
+}
+
+.macos-login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--macos-white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-8);
+  border: 1px solid var(--macos-gray-200);
+}
+
+.macos-logo {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.macos-logo h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  color: var(--macos-gray-900);
+  margin-bottom: var(--spacing-2);
+}
+
+.macos-logo p {
+  font-size: var(--font-size-sm);
+  color: var(--macos-gray-500);
+}
+
+/* macOS Dashboard */
+.macos-dashboard {
+  padding: var(--spacing-6);
+  background: var(--macos-gray-50);
+  min-height: 100vh;
+}
+
+.macos-dashboard-header {
+  background: var(--macos-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--macos-gray-200);
+}
+
+.macos-dashboard-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--macos-gray-900);
+}
+
+.macos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+.macos-stat-card {
+  background: var(--macos-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--macos-gray-200);
+  transition: all 0.2s ease-in-out;
+}
+
+.macos-stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.macos-stat-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--macos-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-2);
+}
+
+.macos-stat-value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--macos-gray-900);
+  margin-bottom: var(--spacing-1);
+}
+
+.macos-stat-change {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.macos-stat-change.positive {
+  color: var(--macos-gray-700);
+}
+
+.macos-stat-change.negative {
+  color: var(--macos-gray-600);
+}
+
+/* macOS Quick Actions */
+.macos-quick-actions {
+  background: var(--macos-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--macos-gray-200);
+}
+
+.macos-quick-actions h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--macos-gray-900);
+  margin-bottom: var(--spacing-4);
+}
+
+.macos-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.macos-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  background: var(--macos-gray-50);
+  border: 1px solid var(--macos-gray-200);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--macos-gray-700);
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+  min-height: 60px;
+}
+
+.macos-action-button:hover {
+  background: var(--macos-gray-100);
+  border-color: var(--macos-gray-600);
+  color: var(--macos-gray-700);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* macOS System Status */
+.macos-system-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  background: var(--macos-gray-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--macos-gray-200);
+  margin-top: var(--spacing-4);
+}
+
+.macos-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--macos-green);
+}
+
+.macos-status-text {
+  font-size: var(--font-size-sm);
+  color: var(--macos-gray-600);
+}
+
+/* macOS Footer */
+.macos-footer {
+  text-align: center;
+  padding: var(--spacing-6);
+  border-top: 1px solid var(--macos-gray-200);
+  background: var(--macos-white);
+  margin-top: var(--spacing-8);
+}
+
+.macos-footer-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+}
+
+.macos-footer-link {
+  color: var(--macos-gray-500);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  transition: color 0.15s ease-in-out;
+}
+
+.macos-footer-link:hover {
+  color: var(--macos-gray-700);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .macos-container {
+    padding: var(--spacing-4);
+  }
+  
+  .macos-login-card {
+    padding: var(--spacing-6);
+  }
+  
+  .macos-dashboard-header {
+    flex-direction: column;
+    gap: var(--spacing-4);
+    text-align: center;
+  }
+  
+  .macos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .macos-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .macos-footer-links {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+}
+
+/* Page Transition Effects */
+.page-transition {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.page-transition.fade-out {
+  opacity: 0;
+}
+
+.page-transition.fade-in {
+  opacity: 1;
+}
+
+/* Smooth page load animation */
+body {
+  animation: fadeInPage 0.4s ease-in-out;
+}
+
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading overlay for transitions */
+.transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--macos-white);
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transition-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.transition-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--macos-gray-200);
+  border-top: 3px solid var(--macos-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --macos-white: #1c1c1e;
+    --macos-gray-50: #000000;
+    --macos-gray-100: #1c1c1e;
+    --macos-gray-200: #2c2c2e;
+    --macos-gray-300: #3a3a3c;
+    --macos-gray-400: #48484a;
+    --macos-gray-500: #636366;
+    --macos-gray-600: #8e8e93;
+    --macos-gray-700: #aeaeb2;
+    --macos-gray-800: #c7c7cc;
+    --macos-gray-900: #f2f2f7;
+  }
+}
