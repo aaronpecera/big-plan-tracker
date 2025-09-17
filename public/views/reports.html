@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Big Plan Tracker</title>
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="macos-container">
+        <!-- Header -->
+        <div class="macos-header">
+            <div class="macos-header-left">
+                <h1 class="macos-title">
+                    <i class="fas fa-chart-bar"></i> Reportes y Análisis
+                </h1>
+            </div>
+            <div class="macos-header-right">
+                <a href="/dashboard" class="macos-button macos-button-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+                <div class="user-info">
+                    <span class="user-name">Usuario</span>
+                    <button onclick="logout()" class="macos-button macos-button-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-content">
+            <!-- Summary Stats -->
+            <div class="macos-stats-grid" style="margin-bottom: var(--spacing-6);">
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-blue);">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalTasks">0</div>
+                        <div class="stat-label">Total Tareas</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-green);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="completedTasks">0</div>
+                        <div class="stat-label">Completadas</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-orange);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="pendingTasks">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-purple);">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="completionRate">0%</div>
+                        <div class="stat-label">Tasa de Completado</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-6); margin-bottom: var(--spacing-6);">
+                <!-- Tasks by Status Chart -->
+                <div class="macos-card">
+                    <h3 style="margin: 0 0 var(--spacing-4) 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-pie-chart"></i> Tareas por Estado
+                    </h3>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="tasksStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tasks by Priority Chart -->
+                <div class="macos-card">
+                    <h3 style="margin: 0 0 var(--spacing-4) 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-exclamation-triangle"></i> Tareas por Prioridad
+                    </h3>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="tasksPriorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Chart -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <h3 style="margin: 0 0 var(--spacing-4) 0; color: var(--macos-gray-900);">
+                    <i class="fas fa-chart-line"></i> Progreso en el Tiempo
+                </h3>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Detailed Reports -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-6);">
+                <!-- User Performance -->
+                <div class="macos-card">
+                    <h3 style="margin: 0 0 var(--spacing-4) 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-users"></i> Rendimiento por Usuario
+                    </h3>
+                    <div id="userPerformance">
+                        <div style="text-align: center; padding: var(--spacing-4); color: var(--macos-gray-500);">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando datos...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Status -->
+                <div class="macos-card">
+                    <h3 style="margin: 0 0 var(--spacing-4) 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-project-diagram"></i> Estado de Proyectos
+                    </h3>
+                    <div id="projectStatus">
+                        <div style="text-align: center; padding: var(--spacing-4); color: var(--macos-gray-500);">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando datos...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasksData = [];
+        let usersData = [];
+        let projectsData = [];
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await loadAllData();
+                generateReports();
+            }
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth?action=check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Update user info in header
+                const userNameElement = document.querySelector('.user-name');
+                if (userNameElement && data.user.username) {
+                    userNameElement.textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                // Load tasks
+                const tasksResponse = await fetch('/api/tasks?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (tasksResponse.ok) {
+                    const tasksResult = await tasksResponse.json();
+                    if (tasksResult.success && tasksResult.tasks) {
+                        tasksData = tasksResult.tasks;
+                    }
+                }
+
+                // Load users
+                const usersResponse = await fetch('/api/users?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (usersResponse.ok) {
+                    const usersResult = await usersResponse.json();
+                    if (usersResult.success && usersResult.users) {
+                        usersData = usersResult.users;
+                    }
+                }
+
+                // Load projects
+                const projectsResponse = await fetch('/api/projects?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (projectsResponse.ok) {
+                    const projectsResult = await projectsResponse.json();
+                    if (projectsResult.success && projectsResult.projects) {
+                        projectsData = projectsResult.projects;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function generateReports() {
+            updateSummaryStats();
+            createTasksStatusChart();
+            createTasksPriorityChart();
+            createTimelineChart();
+            generateUserPerformance();
+            generateProjectStatus();
+        }
+
+        function updateSummaryStats() {
+            const totalTasks = tasksData.length;
+            const completedTasks = tasksData.filter(task => task.status === 'completed').length;
+            const pendingTasks = tasksData.filter(task => task.status === 'pending').length;
+            const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('pendingTasks').textContent = pendingTasks;
+            document.getElementById('completionRate').textContent = completionRate + '%';
+        }
+
+        function createTasksStatusChart() {
+            const ctx = document.getElementById('tasksStatusChart').getContext('2d');
+            
+            const statusCounts = {
+                'pending': tasksData.filter(task => task.status === 'pending').length,
+                'in_progress': tasksData.filter(task => task.status === 'in_progress').length,
+                'completed': tasksData.filter(task => task.status === 'completed').length
+            };
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendientes', 'En Progreso', 'Completadas'],
+                    datasets: [{
+                        data: [statusCounts.pending, statusCounts.in_progress, statusCounts.completed],
+                        backgroundColor: [
+                            '#FF9500', // Orange
+                            '#007AFF', // Blue
+                            '#34C759'  // Green
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTasksPriorityChart() {
+            const ctx = document.getElementById('tasksPriorityChart').getContext('2d');
+            
+            const priorityCounts = {
+                'low': tasksData.filter(task => task.priority === 'low').length,
+                'medium': tasksData.filter(task => task.priority === 'medium').length,
+                'high': tasksData.filter(task => task.priority === 'high').length
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Baja', 'Media', 'Alta'],
+                    datasets: [{
+                        label: 'Número de Tareas',
+                        data: [priorityCounts.low, priorityCounts.medium, priorityCounts.high],
+                        backgroundColor: [
+                            '#34C759', // Green
+                            '#FF9500', // Orange
+                            '#FF3B30'  // Red
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTimelineChart() {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            
+            // Generate sample timeline data for the last 7 days
+            const last7Days = [];
+            const completedByDay = [];
+            const createdByDay = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toLocaleDateString();
+                last7Days.push(dateStr);
+                
+                // Simulate data - in real app, filter by actual dates
+                completedByDay.push(Math.floor(Math.random() * 5) + 1);
+                createdByDay.push(Math.floor(Math.random() * 7) + 2);
+            }
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last7Days,
+                    datasets: [{
+                        label: 'Tareas Completadas',
+                        data: completedByDay,
+                        borderColor: '#34C759',
+                        backgroundColor: '#34C75920',
+                        tension: 0.4
+                    }, {
+                        label: 'Tareas Creadas',
+                        data: createdByDay,
+                        borderColor: '#007AFF',
+                        backgroundColor: '#007AFF20',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateUserPerformance() {
+            const container = document.getElementById('userPerformance');
+            
+            if (usersData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-4); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay datos de usuarios
+                    </div>
+                `;
+                return;
+            }
+
+            const userStats = usersData.map(user => {
+                const userTasks = tasksData.filter(task => task.assigned_to === user.id);
+                const completedTasks = userTasks.filter(task => task.status === 'completed').length;
+                const totalTasks = userTasks.length;
+                const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                return {
+                    ...user,
+                    totalTasks,
+                    completedTasks,
+                    completionRate
+                };
+            });
+
+            const userHTML = userStats.map(user => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-3); border-bottom: 1px solid var(--macos-gray-200);">
+                    <div>
+                        <div style="font-weight: 500; color: var(--macos-gray-900);">${user.username}</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--macos-gray-600);">${user.totalTasks} tareas asignadas</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 500; color: var(--macos-green);">${user.completionRate}%</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--macos-gray-600);">${user.completedTasks} completadas</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = userHTML;
+        }
+
+        function generateProjectStatus() {
+            const container = document.getElementById('projectStatus');
+            
+            if (projectsData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-4); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay datos de proyectos
+                    </div>
+                `;
+                return;
+            }
+
+            const projectHTML = projectsData.slice(0, 5).map(project => {
+                const statusColors = {
+                    'planning': 'var(--macos-blue)',
+                    'active': 'var(--macos-green)',
+                    'on_hold': 'var(--macos-orange)',
+                    'completed': 'var(--macos-purple)'
+                };
+
+                const statusText = {
+                    'planning': 'Planificación',
+                    'active': 'Activo',
+                    'on_hold': 'En Pausa',
+                    'completed': 'Completado'
+                };
+
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-3); border-bottom: 1px solid var(--macos-gray-200);">
+                        <div>
+                            <div style="font-weight: 500; color: var(--macos-gray-900);">${project.name}</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--macos-gray-600);">${project.description || 'Sin descripción'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: var(--font-size-xs); color: white; background: ${statusColors[project.status] || statusColors.planning};">
+                                ${statusText[project.status] || 'Planificación'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = projectHTML;
+        }
+
+        async function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                try {
+                    const response = await fetch('/api/auth?action=logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Empresas - Big Plan Tracker</title>
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="macos-container">
+        <!-- Header -->
+        <div class="macos-header">
+            <div class="macos-header-left">
+                <h1 class="macos-title">
+                    <i class="fas fa-building"></i> Gestión de Empresas
+                </h1>
+            </div>
+            <div class="macos-header-right">
+                <a href="/dashboard" class="macos-button macos-button-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+                <div class="user-info">
+                    <span class="user-name">Usuario</span>
+                    <button onclick="logout()" class="macos-button macos-button-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-content">
+            <!-- Stats Cards -->
+            <div class="macos-stats-grid" style="margin-bottom: var(--spacing-6);">
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-blue);">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalCompanies">0</div>
+                        <div class="stat-label">Total Empresas</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-green);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="activeCompanies">0</div>
+                        <div class="stat-label">Empresas Activas</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-orange);">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="premiumCompanies">0</div>
+                        <div class="stat-label">Plan Premium</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-purple);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="recentCompanies">0</div>
+                        <div class="stat-label">Nuevas (30 días)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-list"></i> Lista de Empresas
+                    </h2>
+                    <div style="display: flex; gap: var(--spacing-3);">
+                        <button onclick="createCompany()" class="macos-button macos-button-primary">
+                            <i class="fas fa-plus"></i> Nueva Empresa
+                        </button>
+                        <button onclick="loadCompanies()" class="macos-button macos-button-secondary">
+                            <i class="fas fa-refresh"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por plan:</label>
+                    <select id="planFilter" onchange="filterCompanies()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="basic">Básico</option>
+                        <option value="premium">Premium</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Estado:</label>
+                    <select id="statusFilter" onchange="filterCompanies()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="active">Activas</option>
+                        <option value="inactive">Inactivas</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Companies List -->
+            <div class="macos-card">
+                <div id="companiesContainer">
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando empresas...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allCompanies = [];
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await loadCompanies();
+                await loadStats();
+            }
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth?action=check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Update user info in header
+                const userNameElement = document.querySelector('.user-name');
+                if (userNameElement && data.user.username) {
+                    userNameElement.textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.companies) {
+                        allCompanies = data.companies;
+                        displayCompanies(allCompanies);
+                    } else {
+                        throw new Error('Invalid companies data format');
+                    }
+                } else {
+                    throw new Error('Failed to load companies');
+                }
+            } catch (error) {
+                console.error('Error loading companies:', error);
+                document.getElementById('companiesContainer').innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-red);">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar las empresas: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/companies?action=stats', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.stats) {
+                        updateStats(data.stats);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalCompanies').textContent = stats.total_companies || 0;
+            document.getElementById('activeCompanies').textContent = stats.active_companies || 0;
+            document.getElementById('premiumCompanies').textContent = stats.premium_companies || 0;
+            document.getElementById('recentCompanies').textContent = stats.recent_companies || 0;
+        }
+
+        function displayCompanies(companies) {
+            const container = document.getElementById('companiesContainer');
+            
+            if (companies.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay empresas disponibles
+                    </div>
+                `;
+                return;
+            }
+
+            const companiesHTML = companies.map(company => {
+                const planColors = {
+                    'basic': 'var(--macos-blue)',
+                    'premium': 'var(--macos-orange)',
+                    'enterprise': 'var(--macos-purple)'
+                };
+
+                const planText = {
+                    'basic': 'Básico',
+                    'premium': 'Premium',
+                    'enterprise': 'Enterprise'
+                };
+
+                const statusColor = company.active !== false ? 'var(--macos-green)' : 'var(--macos-gray-400)';
+                const statusText = company.active !== false ? 'Activa' : 'Inactiva';
+
+                return `
+                    <div class="company-item" style="border: 1px solid var(--macos-gray-200); border-radius: var(--border-radius); padding: var(--spacing-4); margin-bottom: var(--spacing-3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1; display: flex; align-items: center; gap: var(--spacing-4);">
+                                <div style="width: 60px; height: 60px; border-radius: var(--border-radius); background: linear-gradient(135deg, ${planColors[company.plan] || planColors.basic}, ${planColors[company.plan] || planColors.basic}80); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 20px;">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 var(--spacing-1) 0; color: var(--macos-gray-900);">${company.name}</h4>
+                                    <p style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${company.email || 'Sin email'}</p>
+                                    <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
+                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs); color: ${planColors[company.plan] || planColors.basic};">
+                                            <i class="fas fa-star"></i>
+                                            ${planText[company.plan] || 'Básico'}
+                                        </span>
+                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs);">
+                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></div>
+                                            ${statusText}
+                                        </span>
+                                        ${company.phone ? `
+                                            <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                                <i class="fas fa-phone"></i>
+                                                ${company.phone}
+                                            </span>
+                                        ` : ''}
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                            <i class="fas fa-calendar"></i>
+                                            ${company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Fecha no disponible'}
+                                        </span>
+                                    </div>
+                                    ${company.address ? `
+                                        <p style="margin: var(--spacing-2) 0 0 0; color: var(--macos-gray-500); font-size: var(--font-size-xs);">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            ${company.address}
+                                        </p>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: var(--spacing-2);">
+                                <button onclick="viewCompany('${company.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editCompany('${company.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="toggleCompanyStatus('${company.id}')" class="macos-button ${company.active !== false ? 'macos-button-warning' : 'macos-button-success'}" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-${company.active !== false ? 'pause' : 'play'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = companiesHTML;
+        }
+
+        function filterCompanies() {
+            const planFilter = document.getElementById('planFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredCompanies = allCompanies;
+            
+            if (planFilter) {
+                filteredCompanies = filteredCompanies.filter(company => company.plan === planFilter);
+            }
+            
+            if (statusFilter) {
+                if (statusFilter === 'active') {
+                    filteredCompanies = filteredCompanies.filter(company => company.active !== false);
+                } else if (statusFilter === 'inactive') {
+                    filteredCompanies = filteredCompanies.filter(company => company.active === false);
+                }
+            }
+            
+            displayCompanies(filteredCompanies);
+        }
+
+        function createCompany() {
+            const name = prompt('Nombre de la empresa:');
+            if (!name) return;
+            
+            const email = prompt('Email:');
+            const phone = prompt('Teléfono:');
+            const address = prompt('Dirección:');
+            const plan = prompt('Plan (basic, premium, enterprise):', 'basic');
+            
+            const companyData = {
+                name: name,
+                email: email || '',
+                phone: phone || '',
+                address: address || '',
+                plan: plan || 'basic'
+            };
+            
+            fetch('/api/companies?action=create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(companyData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Empresa creada exitosamente');
+                    loadCompanies();
+                    loadStats();
+                } else {
+                    alert('Error al crear la empresa: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear la empresa');
+            });
+        }
+
+        function viewCompany(companyId) {
+            const company = allCompanies.find(c => c.id == companyId);
+            if (!company) return;
+            
+            let companyInfo = `EMPRESA: ${company.name}\n\n`;
+            companyInfo += `Email: ${company.email || 'Sin email'}\n`;
+            companyInfo += `Teléfono: ${company.phone || 'Sin teléfono'}\n`;
+            companyInfo += `Dirección: ${company.address || 'Sin dirección'}\n`;
+            companyInfo += `Plan: ${company.plan || 'basic'}\n`;
+            companyInfo += `Estado: ${company.active !== false ? 'Activa' : 'Inactiva'}\n`;
+            companyInfo += `Creada: ${company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Fecha no disponible'}\n`;
+            
+            alert(companyInfo);
+        }
+
+        function editCompany(companyId) {
+            alert('Funcionalidad de edición en desarrollo');
+        }
+
+        function toggleCompanyStatus(companyId) {
+            const company = allCompanies.find(c => c.id == companyId);
+            if (!company) return;
+            
+            const action = company.active !== false ? 'desactivar' : 'activar';
+            
+            if (!confirm(`¿Estás seguro de que quieres ${action} esta empresa?`)) {
+                return;
+            }
+            
+            const newStatus = company.active === false;
+            
+            fetch(`/api/companies?action=update&id=${companyId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ active: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Empresa ${action}da exitosamente`);
+                    loadCompanies();
+                    loadStats();
+                } else {
+                    alert('Error: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar la empresa');
+            });
+        }
+
+        async function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                try {
+                    const response = await fetch('/api/auth?action=logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .company-item:hover {
+            background-color: var(--macos-gray-50);
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Tareas - Big Plan Tracker</title>
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="macos-container">
+        <!-- Header -->
+        <div class="macos-header">
+            <div class="macos-header-left">
+                <h1 class="macos-title">
+                    <i class="fas fa-tasks"></i> Gestión de Tareas
+                </h1>
+            </div>
+            <div class="macos-header-right">
+                <a href="/dashboard" class="macos-button macos-button-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+                <div class="user-info">
+                    <span class="user-name">Usuario</span>
+                    <button onclick="logout()" class="macos-button macos-button-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-content">
+            <!-- Actions Bar -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-list"></i> Lista de Tareas
+                    </h2>
+                    <div style="display: flex; gap: var(--spacing-3);">
+                        <button onclick="createTask()" class="macos-button macos-button-primary">
+                            <i class="fas fa-plus"></i> Nueva Tarea
+                        </button>
+                        <button onclick="loadTasks()" class="macos-button macos-button-secondary">
+                            <i class="fas fa-refresh"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por estado:</label>
+                    <select id="statusFilter" onchange="filterTasks()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="in_progress">En Progreso</option>
+                        <option value="completed">Completadas</option>
+                    </select>
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por prioridad:</label>
+                    <select id="priorityFilter" onchange="filterTasks()" class="macos-input" style="width: auto;">
+                        <option value="">Todas</option>
+                        <option value="high">Alta</option>
+                        <option value="medium">Media</option>
+                        <option value="low">Baja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tasks List -->
+            <div class="macos-card">
+                <div id="tasksContainer">
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando tareas...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nueva Tarea</h3>
+                <button onclick="closeModal()" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <div class="form-group">
+                        <label for="taskTitle">Título *</label>
+                        <input type="text" id="taskTitle" name="title" class="macos-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDescription">Descripción</label>
+                        <textarea id="taskDescription" name="description" class="macos-input" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriority">Prioridad</label>
+                        <select id="taskPriority" name="priority" class="macos-input">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskStatus">Estado</label>
+                        <select id="taskStatus" name="status" class="macos-input">
+                            <option value="pending" selected>Pendiente</option>
+                            <option value="in_progress">En Progreso</option>
+                            <option value="completed">Completada</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDueDate">Fecha de vencimiento</label>
+                        <input type="datetime-local" id="taskDueDate" name="due_date" class="macos-input">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" class="macos-button macos-button-secondary">Cancelar</button>
+                <button onclick="saveTask()" class="macos-button macos-button-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allTasks = [];
+        let editingTaskId = null;
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await loadTasks();
+            }
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth?action=check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Update user info in header
+                const userNameElement = document.querySelector('.user-name');
+                if (userNameElement && data.user.username) {
+                    userNameElement.textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.tasks) {
+                        allTasks = data.tasks;
+                        displayTasks(allTasks);
+                    } else {
+                        throw new Error('Invalid tasks data format');
+                    }
+                } else {
+                    throw new Error('Failed to load tasks');
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasksContainer').innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-red);">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar las tareas: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasksContainer');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay tareas disponibles
+                    </div>
+                `;
+                return;
+            }
+
+            const tasksHTML = tasks.map(task => {
+                const statusColors = {
+                    'completed': 'var(--macos-green)',
+                    'in_progress': 'var(--macos-blue)',
+                    'pending': 'var(--macos-gray-400)'
+                };
+
+                const priorityColors = {
+                    'high': 'var(--macos-red)',
+                    'medium': 'var(--macos-orange)',
+                    'low': 'var(--macos-gray-500)'
+                };
+
+                const statusText = {
+                    'completed': 'Completada',
+                    'in_progress': 'En Progreso',
+                    'pending': 'Pendiente'
+                };
+
+                const priorityText = {
+                    'high': 'Alta',
+                    'medium': 'Media',
+                    'low': 'Baja'
+                };
+
+                return `
+                    <div class="task-item" style="border: 1px solid var(--macos-gray-200); border-radius: var(--border-radius); padding: var(--spacing-4); margin-bottom: var(--spacing-3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-900);">${task.title}</h4>
+                                <p style="margin: 0 0 var(--spacing-3) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${task.description || 'Sin descripción'}</p>
+                                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                                    <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs);">
+                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColors[task.status]};"></div>
+                                        ${statusText[task.status]}
+                                    </span>
+                                    <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs); color: ${priorityColors[task.priority]};">
+                                        <i class="fas fa-flag"></i>
+                                        ${priorityText[task.priority]}
+                                    </span>
+                                    <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                        <i class="fas fa-calendar"></i>
+                                        ${new Date(task.created_at).toLocaleDateString()}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: var(--spacing-2);">
+                                <button onclick="editTask('${task.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteTask('${task.id}')" class="macos-button macos-button-danger" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = tasksHTML;
+        }
+
+        function filterTasks() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const priorityFilter = document.getElementById('priorityFilter').value;
+            
+            let filteredTasks = allTasks;
+            
+            if (statusFilter) {
+                filteredTasks = filteredTasks.filter(task => task.status === statusFilter);
+            }
+            
+            if (priorityFilter) {
+                filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
+            }
+            
+            displayTasks(filteredTasks);
+        }
+
+        function createTask() {
+            editingTaskId = null;
+            document.getElementById('modalTitle').textContent = 'Nueva Tarea';
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskModal').style.display = 'block';
+        }
+
+        function editTask(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            editingTaskId = taskId;
+            document.getElementById('modalTitle').textContent = 'Editar Tarea';
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            document.getElementById('taskPriority').value = task.priority;
+            document.getElementById('taskStatus').value = task.status;
+            
+            if (task.due_date) {
+                const date = new Date(task.due_date);
+                document.getElementById('taskDueDate').value = date.toISOString().slice(0, 16);
+            }
+            
+            document.getElementById('taskModal').style.display = 'block';
+        }
+
+        async function saveTask() {
+            const form = document.getElementById('taskForm');
+            const formData = new FormData(form);
+            const taskData = Object.fromEntries(formData);
+            
+            if (!taskData.title.trim()) {
+                alert('El título es requerido');
+                return;
+            }
+            
+            try {
+                const url = editingTaskId 
+                    ? `/api/tasks?action=update&id=${editingTaskId}`
+                    : '/api/tasks?action=create';
+                    
+                const method = editingTaskId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message || 'Tarea guardada exitosamente');
+                    closeModal();
+                    await loadTasks();
+                } else {
+                    alert('Error: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar la tarea');
+            }
+        }
+
+        async function deleteTask(taskId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/tasks?action=delete&id=${taskId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Tarea eliminada exitosamente');
+                    await loadTasks();
+                } else {
+                    alert('Error: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar la tarea');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+            editingTaskId = null;
+        }
+
+        async function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                try {
+                    const response = await fetch('/api/auth?action=logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                }
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: var(--spacing-4);
+            border-bottom: 1px solid var(--macos-gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--macos-gray-900);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--macos-gray-500);
+        }
+
+        .modal-close:hover {
+            color: var(--macos-gray-700);
+        }
+
+        .modal-body {
+            padding: var(--spacing-4);
+        }
+
+        .modal-footer {
+            padding: var(--spacing-4);
+            border-top: 1px solid var(--macos-gray-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-3);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: var(--spacing-1);
+            font-weight: 500;
+            color: var(--macos-gray-700);
+        }
+
+        .task-item:hover {
+            background-color: var(--macos-gray-50);
+        }
+    </style>
+</body>
+</html>

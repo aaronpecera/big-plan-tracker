@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - Big Plan Tracker</title>
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="macos-container">
+        <!-- Header -->
+        <div class="macos-header">
+            <div class="macos-header-left">
+                <h1 class="macos-title">
+                    <i class="fas fa-users"></i> Gestión de Usuarios
+                </h1>
+            </div>
+            <div class="macos-header-right">
+                <a href="/dashboard" class="macos-button macos-button-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+                <div class="user-info">
+                    <span class="user-name">Usuario</span>
+                    <button onclick="logout()" class="macos-button macos-button-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-content">
+            <!-- Stats Cards -->
+            <div class="macos-stats-grid" style="margin-bottom: var(--spacing-6);">
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-blue);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalUsers">0</div>
+                        <div class="stat-label">Total Usuarios</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-green);">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="activeUsers">0</div>
+                        <div class="stat-label">Usuarios Activos</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-orange);">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="adminUsers">0</div>
+                        <div class="stat-label">Administradores</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-purple);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="recentUsers">0</div>
+                        <div class="stat-label">Nuevos (30 días)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-list"></i> Lista de Usuarios
+                    </h2>
+                    <div style="display: flex; gap: var(--spacing-3);">
+                        <button onclick="createUser()" class="macos-button macos-button-primary">
+                            <i class="fas fa-plus"></i> Nuevo Usuario
+                        </button>
+                        <button onclick="loadUsers()" class="macos-button macos-button-secondary">
+                            <i class="fas fa-refresh"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por rol:</label>
+                    <select id="roleFilter" onchange="filterUsers()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="admin">Administrador</option>
+                        <option value="user">Usuario</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Estado:</label>
+                    <select id="statusFilter" onchange="filterUsers()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="active">Activos</option>
+                        <option value="inactive">Inactivos</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Users List -->
+            <div class="macos-card">
+                <div id="usersContainer">
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allUsers = [];
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await loadUsers();
+                await loadStats();
+            }
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth?action=check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Update user info in header
+                const userNameElement = document.querySelector('.user-name');
+                if (userNameElement && data.user.username) {
+                    userNameElement.textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.users) {
+                        allUsers = data.users;
+                        displayUsers(allUsers);
+                    } else {
+                        throw new Error('Invalid users data format');
+                    }
+                } else {
+                    throw new Error('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersContainer').innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-red);">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar los usuarios: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/users?action=stats', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.stats) {
+                        updateStats(data.stats);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalUsers').textContent = stats.total_users || 0;
+            document.getElementById('activeUsers').textContent = stats.active_users || 0;
+            document.getElementById('adminUsers').textContent = stats.admin_users || 0;
+            document.getElementById('recentUsers').textContent = stats.recent_users || 0;
+        }
+
+        function displayUsers(users) {
+            const container = document.getElementById('usersContainer');
+            
+            if (users.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay usuarios disponibles
+                    </div>
+                `;
+                return;
+            }
+
+            const usersHTML = users.map(user => {
+                const roleColors = {
+                    'admin': 'var(--macos-red)',
+                    'manager': 'var(--macos-orange)',
+                    'user': 'var(--macos-blue)'
+                };
+
+                const roleText = {
+                    'admin': 'Administrador',
+                    'manager': 'Manager',
+                    'user': 'Usuario'
+                };
+
+                const statusColor = user.active !== false ? 'var(--macos-green)' : 'var(--macos-gray-400)';
+                const statusText = user.active !== false ? 'Activo' : 'Inactivo';
+
+                return `
+                    <div class="user-item" style="border: 1px solid var(--macos-gray-200); border-radius: var(--border-radius); padding: var(--spacing-4); margin-bottom: var(--spacing-3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1; display: flex; align-items: center; gap: var(--spacing-4);">
+                                <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, ${roleColors[user.role] || roleColors.user}, ${roleColors[user.role] || roleColors.user}80); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">
+                                    ${user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 var(--spacing-1) 0; color: var(--macos-gray-900);">${user.username}</h4>
+                                    <p style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${user.email || 'Sin email'}</p>
+                                    <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
+                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs); color: ${roleColors[user.role] || roleColors.user};">
+                                            <i class="fas fa-user-tag"></i>
+                                            ${roleText[user.role] || 'Usuario'}
+                                        </span>
+                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs);">
+                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></div>
+                                            ${statusText}
+                                        </span>
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                            <i class="fas fa-calendar"></i>
+                                            ${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Fecha no disponible'}
+                                        </span>
+                                        ${user.last_login ? `
+                                            <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                                <i class="fas fa-clock"></i>
+                                                Último acceso: ${new Date(user.last_login).toLocaleDateString()}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: var(--spacing-2);">
+                                <button onclick="viewUser('${user.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editUser('${user.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="toggleUserStatus('${user.id}')" class="macos-button ${user.active !== false ? 'macos-button-warning' : 'macos-button-success'}" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-${user.active !== false ? 'pause' : 'play'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = usersHTML;
+        }
+
+        function filterUsers() {
+            const roleFilter = document.getElementById('roleFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredUsers = allUsers;
+            
+            if (roleFilter) {
+                filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
+            }
+            
+            if (statusFilter) {
+                if (statusFilter === 'active') {
+                    filteredUsers = filteredUsers.filter(user => user.active !== false);
+                } else if (statusFilter === 'inactive') {
+                    filteredUsers = filteredUsers.filter(user => user.active === false);
+                }
+            }
+            
+            displayUsers(filteredUsers);
+        }
+
+        function createUser() {
+            const username = prompt('Nombre de usuario:');
+            if (!username) return;
+            
+            const email = prompt('Email:');
+            const password = prompt('Contraseña:');
+            const role = prompt('Rol (admin, manager, user):', 'user');
+            
+            if (!password) {
+                alert('La contraseña es requerida');
+                return;
+            }
+            
+            const userData = {
+                username: username,
+                email: email || '',
+                password: password,
+                role: role || 'user'
+            };
+            
+            fetch('/api/users?action=create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(userData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Usuario creado exitosamente');
+                    loadUsers();
+                    loadStats();
+                } else {
+                    alert('Error al crear el usuario: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear el usuario');
+            });
+        }
+
+        function viewUser(userId) {
+            const user = allUsers.find(u => u.id == userId);
+            if (!user) return;
+            
+            let userInfo = `USUARIO: ${user.username}\n\n`;
+            userInfo += `Email: ${user.email || 'Sin email'}\n`;
+            userInfo += `Rol: ${user.role || 'user'}\n`;
+            userInfo += `Estado: ${user.active !== false ? 'Activo' : 'Inactivo'}\n`;
+            userInfo += `Creado: ${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Fecha no disponible'}\n`;
+            if (user.last_login) {
+                userInfo += `Último acceso: ${new Date(user.last_login).toLocaleDateString()}\n`;
+            }
+            
+            alert(userInfo);
+        }
+
+        function editUser(userId) {
+            alert('Funcionalidad de edición en desarrollo');
+        }
+
+        function toggleUserStatus(userId) {
+            const user = allUsers.find(u => u.id == userId);
+            if (!user) return;
+            
+            const action = user.active !== false ? 'desactivar' : 'activar';
+            
+            if (!confirm(`¿Estás seguro de que quieres ${action} este usuario?`)) {
+                return;
+            }
+            
+            const newStatus = user.active === false;
+            
+            fetch(`/api/users?action=update&id=${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ active: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Usuario ${action}do exitosamente`);
+                    loadUsers();
+                    loadStats();
+                } else {
+                    alert('Error: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar el usuario');
+            });
+        }
+
+        async function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                try {
+                    const response = await fetch('/api/auth?action=logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .user-item:hover {
+            background-color: var(--macos-gray-50);
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Proyectos - Big Plan Tracker</title>
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="macos-container">
+        <!-- Header -->
+        <div class="macos-header">
+            <div class="macos-header-left">
+                <h1 class="macos-title">
+                    <i class="fas fa-folder"></i> Gestión de Proyectos
+                </h1>
+            </div>
+            <div class="macos-header-right">
+                <a href="/dashboard" class="macos-button macos-button-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+                <div class="user-info">
+                    <span class="user-name">Usuario</span>
+                    <button onclick="logout()" class="macos-button macos-button-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="macos-content">
+            <!-- Stats Cards -->
+            <div class="macos-stats-grid" style="margin-bottom: var(--spacing-6);">
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-blue);">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalProjects">0</div>
+                        <div class="stat-label">Total Proyectos</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-green);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="activeProjects">0</div>
+                        <div class="stat-label">Proyectos Activos</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-orange);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="completedProjects">0</div>
+                        <div class="stat-label">Completados</div>
+                    </div>
+                </div>
+                <div class="macos-stat-card">
+                    <div class="stat-icon" style="background: var(--macos-purple);">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalBudget">€0</div>
+                        <div class="stat-label">Presupuesto Total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: var(--macos-gray-900);">
+                        <i class="fas fa-list"></i> Lista de Proyectos
+                    </h2>
+                    <div style="display: flex; gap: var(--spacing-3);">
+                        <button onclick="createProject()" class="macos-button macos-button-primary">
+                            <i class="fas fa-plus"></i> Nuevo Proyecto
+                        </button>
+                        <button onclick="loadProjects()" class="macos-button macos-button-secondary">
+                            <i class="fas fa-refresh"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="macos-card" style="margin-bottom: var(--spacing-6);">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                    <label style="font-weight: 500; color: var(--macos-gray-700);">Filtrar por estado:</label>
+                    <select id="statusFilter" onchange="filterProjects()" class="macos-input" style="width: auto;">
+                        <option value="">Todos</option>
+                        <option value="planning">Planificación</option>
+                        <option value="active">Activo</option>
+                        <option value="completed">Completado</option>
+                        <option value="on_hold">En Pausa</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Projects List -->
+            <div class="macos-card">
+                <div id="projectsContainer">
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando proyectos...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allProjects = [];
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                await loadProjects();
+                await loadStats();
+            }
+        });
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth?action=check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (!data.success || !data.user) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                
+                // Update user info in header
+                const userNameElement = document.querySelector('.user-name');
+                if (userNameElement && data.user.username) {
+                    userNameElement.textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects?action=list', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.projects) {
+                        allProjects = data.projects;
+                        displayProjects(allProjects);
+                    } else {
+                        throw new Error('Invalid projects data format');
+                    }
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('projectsContainer').innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-red);">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar los proyectos: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/projects?action=stats', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.stats) {
+                        updateStats(data.stats);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('totalProjects').textContent = stats.total_projects || 0;
+            document.getElementById('activeProjects').textContent = stats.active_projects || 0;
+            document.getElementById('completedProjects').textContent = stats.completed_projects || 0;
+            document.getElementById('totalBudget').textContent = `€${(stats.total_budget || 0).toLocaleString()}`;
+        }
+
+        function displayProjects(projects) {
+            const container = document.getElementById('projectsContainer');
+            
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: var(--spacing-8); color: var(--macos-gray-500);">
+                        <i class="fas fa-inbox"></i> No hay proyectos disponibles
+                    </div>
+                `;
+                return;
+            }
+
+            const projectsHTML = projects.map(project => {
+                const statusColors = {
+                    'completed': 'var(--macos-green)',
+                    'active': 'var(--macos-blue)',
+                    'planning': 'var(--macos-orange)',
+                    'on_hold': 'var(--macos-gray-400)'
+                };
+
+                const statusText = {
+                    'completed': 'Completado',
+                    'active': 'Activo',
+                    'planning': 'Planificación',
+                    'on_hold': 'En Pausa'
+                };
+
+                const progress = project.progress || 0;
+
+                return `
+                    <div class="project-item" style="border: 1px solid var(--macos-gray-200); border-radius: var(--border-radius); padding: var(--spacing-4); margin-bottom: var(--spacing-3);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-900);">${project.name}</h4>
+                                <p style="margin: 0 0 var(--spacing-3) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${project.description || 'Sin descripción'}</p>
+                                
+                                <!-- Progress Bar -->
+                                <div style="margin-bottom: var(--spacing-3);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-1);">
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-600);">Progreso</span>
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-600);">${progress}%</span>
+                                    </div>
+                                    <div style="width: 100%; height: 6px; background-color: var(--macos-gray-200); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: ${progress}%; height: 100%; background-color: ${statusColors[project.status]}; transition: width 0.3s ease;"></div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
+                                    <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs);">
+                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColors[project.status]};"></div>
+                                        ${statusText[project.status]}
+                                    </span>
+                                    ${project.budget ? `
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                            <i class="fas fa-euro-sign"></i>
+                                            €${project.budget.toLocaleString()}
+                                        </span>
+                                    ` : ''}
+                                    <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                        <i class="fas fa-calendar"></i>
+                                        ${new Date(project.created_at).toLocaleDateString()}
+                                    </span>
+                                    ${project.due_date ? `
+                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                            <i class="fas fa-clock"></i>
+                                            ${new Date(project.due_date).toLocaleDateString()}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: var(--spacing-2);">
+                                <button onclick="viewProject('${project.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editProject('${project.id}')" class="macos-button macos-button-secondary" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteProject('${project.id}')" class="macos-button macos-button-danger" style="padding: var(--spacing-1) var(--spacing-2);">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = projectsHTML;
+        }
+
+        function filterProjects() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredProjects = allProjects;
+            
+            if (statusFilter) {
+                filteredProjects = filteredProjects.filter(project => project.status === statusFilter);
+            }
+            
+            displayProjects(filteredProjects);
+        }
+
+        function createProject() {
+            const name = prompt('Nombre del proyecto:');
+            if (!name) return;
+            
+            const description = prompt('Descripción del proyecto:');
+            const budget = prompt('Presupuesto (opcional):');
+            
+            const projectData = {
+                name: name,
+                description: description || '',
+                status: 'planning',
+                progress: 0
+            };
+            
+            if (budget && !isNaN(budget)) {
+                projectData.budget = parseFloat(budget);
+            }
+            
+            fetch('/api/projects?action=create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(projectData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Proyecto creado exitosamente');
+                    loadProjects();
+                    loadStats();
+                } else {
+                    alert('Error al crear el proyecto: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear el proyecto');
+            });
+        }
+
+        function viewProject(projectId) {
+            const project = allProjects.find(p => p.id == projectId);
+            if (!project) return;
+            
+            let projectInfo = `PROYECTO: ${project.name}\n\n`;
+            projectInfo += `Descripción: ${project.description || 'Sin descripción'}\n`;
+            projectInfo += `Estado: ${project.status}\n`;
+            projectInfo += `Progreso: ${project.progress || 0}%\n`;
+            if (project.budget) {
+                projectInfo += `Presupuesto: €${project.budget.toLocaleString()}\n`;
+            }
+            projectInfo += `Creado: ${new Date(project.created_at).toLocaleDateString()}\n`;
+            if (project.due_date) {
+                projectInfo += `Fecha límite: ${new Date(project.due_date).toLocaleDateString()}\n`;
+            }
+            
+            alert(projectInfo);
+        }
+
+        function editProject(projectId) {
+            alert('Funcionalidad de edición en desarrollo');
+        }
+
+        function deleteProject(projectId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este proyecto?')) {
+                return;
+            }
+            
+            fetch(`/api/projects?action=delete&id=${projectId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Proyecto eliminado exitosamente');
+                    loadProjects();
+                    loadStats();
+                } else {
+                    alert('Error: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al eliminar el proyecto');
+            });
+        }
+
+        async function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                try {
+                    const response = await fetch('/api/auth?action=logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login';
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .project-item:hover {
+            background-color: var(--macos-gray-50);
+        }
+    </style>
+</body>
+</html>
