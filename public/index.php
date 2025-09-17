@@ -62,6 +62,36 @@ switch (true) {
         include __DIR__ . '/views/login.html';
         break;
         
+    case $path === 'views/tasks':
+    case $path === 'views/tasks.html':
+        include __DIR__ . '/views/tasks.html';
+        break;
+        
+    case $path === 'views/projects':
+    case $path === 'views/projects.html':
+        include __DIR__ . '/views/projects.html';
+        break;
+        
+    case $path === 'views/users':
+    case $path === 'views/users.html':
+        include __DIR__ . '/views/users.html';
+        break;
+        
+    case $path === 'views/companies':
+    case $path === 'views/companies.html':
+        include __DIR__ . '/views/companies.html';
+        break;
+        
+    case $path === 'views/reports':
+    case $path === 'views/reports.html':
+        include __DIR__ . '/views/reports.html';
+        break;
+        
+    case $path === 'views/dashboard':
+    case $path === 'views/dashboard.html':
+        include __DIR__ . '/views/dashboard.html';
+        break;
+        
     case strpos($path, 'api/') === 0:
         // API routes
         $api_path = substr($path, 4); // Remove 'api/' prefix
