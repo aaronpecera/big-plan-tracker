@@ -130,7 +130,7 @@
 
         async function checkAuth() {
             try {
-                const response = await fetch('/api/auth?action=check', {
+                const response = await fetch('/api/auth?action=status', {
                     method: 'GET',
                     credentials: 'include'
                 });
@@ -141,7 +141,7 @@
                 }
                 
                 const data = await response.json();
-                if (!data.success || !data.user) {
+                if (!data.success || !data.authenticated || !data.user) {
                     window.location.href = '/login';
                     return false;
                 }
