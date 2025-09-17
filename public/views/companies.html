@@ -254,21 +254,27 @@
                                     <h4 style="margin: 0 0 var(--spacing-1) 0; color: var(--macos-gray-900);">${company.name}</h4>
                                     <p style="margin: 0 0 var(--spacing-2) 0; color: var(--macos-gray-600); font-size: var(--font-size-sm);">${company.email || 'Sin email'}</p>
                                     <div style="display: flex; gap: var(--spacing-4); align-items: center; flex-wrap: wrap;">
-                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs); color: ${planColors[company.plan] || planColors.basic};">
-                                            <i class="fas fa-star"></i>
-                                            ${planText[company.plan] || 'Básico'}
+                                        <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); padding: 2px 8px; background: ${planColors[company.plan] || planColors.basic}20; color: ${planColors[company.plan] || planColors.basic}; border-radius: 12px; font-size: var(--font-size-xs); font-weight: 500;">
+                                            <i class="fas fa-crown"></i>
+                                            ${company.plan ? company.plan.charAt(0).toUpperCase() + company.plan.slice(1) : 'Básico'}
                                         </span>
-                                        <span style="display: flex; align-items: center; gap: var(--spacing-1); font-size: var(--font-size-xs);">
-                                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></div>
+                                        <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); color: ${statusColor}; font-size: var(--font-size-xs); font-weight: 500;">
+                                            <i class="fas fa-circle" style="font-size: 6px;"></i>
                                             ${statusText}
                                         </span>
+                                        ${company.cost_per_hour ? `
+                                            <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); padding: 2px 8px; background: var(--macos-green)20; color: var(--macos-green); border-radius: 12px; font-size: var(--font-size-xs); font-weight: 500;">
+                                                <i class="fas fa-euro-sign"></i>
+                                                ${company.cost_per_hour}${company.currency ? '/' + company.currency : ''}/h
+                                            </span>
+                                        ` : ''}
                                         ${company.phone ? `
-                                            <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                            <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); color: var(--macos-gray-500); font-size: var(--font-size-xs);">
                                                 <i class="fas fa-phone"></i>
                                                 ${company.phone}
                                             </span>
                                         ` : ''}
-                                        <span style="font-size: var(--font-size-xs); color: var(--macos-gray-500);">
+                                        <span style="display: inline-flex; align-items: center; gap: var(--spacing-1); color: var(--macos-gray-500); font-size: var(--font-size-xs);">
                                             <i class="fas fa-calendar"></i>
                                             ${company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Fecha no disponible'}
                                         </span>
@@ -330,12 +336,28 @@
             const address = prompt('Dirección:');
             const plan = prompt('Plan (basic, premium, enterprise):', 'basic');
             
+            // Cost per hour input
+            let costPerHour = prompt('Costo por hora (€):', '25.00');
+            if (costPerHour) {
+                costPerHour = parseFloat(costPerHour);
+                if (isNaN(costPerHour) || costPerHour < 0) {
+                    alert('Por favor ingresa un costo por hora válido');
+                    return;
+                }
+            } else {
+                costPerHour = 25.00; // Default value
+            }
+            
+            const currency = prompt('Moneda:', 'EUR');
+            
             const companyData = {
                 name: name,
                 email: email || '',
                 phone: phone || '',
                 address: address || '',
-                plan: plan || 'basic'
+                plan: plan || 'basic',
+                cost_per_hour: costPerHour,
+                currency: currency || 'EUR'
             };
             
             fetch('/api/companies?action=create', {
@@ -371,6 +393,8 @@
             companyInfo += `Teléfono: ${company.phone || 'Sin teléfono'}\n`;
             companyInfo += `Dirección: ${company.address || 'Sin dirección'}\n`;
             companyInfo += `Plan: ${company.plan || 'basic'}\n`;
+            companyInfo += `Costo por hora: ${company.cost_per_hour ? company.cost_per_hour + ' ' + (company.currency || 'EUR') : 'No configurado'}\n`;
+            companyInfo += `Moneda: ${company.currency || 'EUR'}\n`;
             companyInfo += `Estado: ${company.active !== false ? 'Activa' : 'Inactiva'}\n`;
             companyInfo += `Creada: ${company.created_at ? new Date(company.created_at).toLocaleDateString() : 'Fecha no disponible'}\n`;
             
@@ -378,7 +402,63 @@
         }
 
         function editCompany(companyId) {
-            alert('Funcionalidad de edición en desarrollo');
+            const company = allCompanies.find(c => c.id == companyId);
+            if (!company) return;
+            
+            const name = prompt('Nombre de la empresa:', company.name);
+            if (!name) return;
+            
+            const email = prompt('Email:', company.email || '');
+            const phone = prompt('Teléfono:', company.phone || '');
+            const address = prompt('Dirección:', company.address || '');
+            const plan = prompt('Plan (basic, premium, enterprise):', company.plan || 'basic');
+            
+            // Cost per hour input
+            let costPerHour = prompt('Costo por hora (€):', company.cost_per_hour || '25.00');
+            if (costPerHour) {
+                costPerHour = parseFloat(costPerHour);
+                if (isNaN(costPerHour) || costPerHour < 0) {
+                    alert('Por favor ingresa un costo por hora válido');
+                    return;
+                }
+            } else {
+                costPerHour = company.cost_per_hour || 25.00;
+            }
+            
+            const currency = prompt('Moneda:', company.currency || 'EUR');
+            
+            const companyData = {
+                name: name,
+                email: email || '',
+                phone: phone || '',
+                address: address || '',
+                plan: plan || 'basic',
+                cost_per_hour: costPerHour,
+                currency: currency || 'EUR'
+            };
+            
+            fetch(`/api/companies?action=update&id=${companyId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(companyData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Empresa actualizada exitosamente');
+                    loadCompanies();
+                    loadStats();
+                } else {
+                    alert('Error al actualizar la empresa: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar la empresa');
+            });
         }
 
         function toggleCompanyStatus(companyId) {
