@@ -33,6 +33,17 @@ class DatabaseCostTrackingUpdater {
     }
     
     /**
+     * Create a MongoDB UTCDateTime object or fallback to current timestamp
+     */
+    private function createDateTimeObject() {
+        if (class_exists('MongoDB\BSON\UTCDateTime')) {
+            return new MongoDB\BSON\UTCDateTime();
+        }
+        // Fallback for when MongoDB extension is not available
+        return time() * 1000; // MongoDB expects milliseconds
+    }
+    
+    /**
      * Ejecutar todas las actualizaciones
      */
     public function runAllUpdates() {
@@ -65,7 +76,7 @@ class DatabaseCostTrackingUpdater {
                 '$set' => [
                     'cost_per_hour' => 25.00,
                     'currency' => 'EUR',
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -78,7 +89,7 @@ class DatabaseCostTrackingUpdater {
             [
                 '$set' => [
                     'currency' => 'EUR',
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -95,7 +106,7 @@ class DatabaseCostTrackingUpdater {
                         'phone' => '',
                         'address' => ''
                     ],
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -108,7 +119,7 @@ class DatabaseCostTrackingUpdater {
             [
                 '$set' => [
                     'active' => true,
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -131,7 +142,7 @@ class DatabaseCostTrackingUpdater {
                 '$set' => [
                     'total_cost' => 0.00,
                     'actual_hours' => 0.00,
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -144,7 +155,7 @@ class DatabaseCostTrackingUpdater {
             [
                 '$set' => [
                     'estimated_hours' => 1.00,
-                    'updated_at' => new MongoDB\BSON\UTCDateTime()
+                    'updated_at' => $this->createDateTimeObject()
                 ]
             ]
         );
@@ -216,7 +227,7 @@ class DatabaseCostTrackingUpdater {
                     '$set' => [
                         'actual_hours' => round($totalHours, 2),
                         'total_cost' => round($totalCost, 2),
-                        'updated_at' => new MongoDB\BSON\UTCDateTime()
+                        'updated_at' => $this->createDateTimeObject()
                     ]
                 ]
             );
@@ -304,7 +315,7 @@ class DatabaseCostTrackingUpdater {
                     'key' => $configItem['key'],
                     'value' => $configItem['value'],
                     'description' => $configItem['description'],
-                    'updated_at' => new MongoDB\BSON\UTCDateTime(),
+                    'updated_at' => $this->createDateTimeObject(),
                     'updated_by' => null
                 ]);
                 echo "   - Configuración agregada: {$configItem['key']}\n";
@@ -383,8 +394,8 @@ class DatabaseCostTrackingUpdater {
                     'phone' => '+34 123 456 789',
                     'address' => 'Calle Ejemplo, 123, Madrid'
                 ],
-                'created_at' => new MongoDB\BSON\UTCDateTime(),
-                'updated_at' => new MongoDB\BSON\UTCDateTime(),
+                'created_at' => $this->createDateTimeObject(),
+                'updated_at' => $this->createDateTimeObject(),
                 'active' => true
             ];
             
