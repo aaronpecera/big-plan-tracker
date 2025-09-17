@@ -108,43 +108,49 @@ function handleLogin($users) {
     $input = json_decode(file_get_contents('php://input'), true);
     
     if (!$input || !isset($input['username']) || !isset($input['password'])) {
-        throw new Exception('Usuario y contraseña son requeridos');
+        throw new Exception('Credenciales requeridas');
     }
     
     $username = trim($input['username']);
     $password = trim($input['password']);
     
-    if (empty($username) || empty($password)) {
-        throw new Exception('Usuario y contraseña no pueden estar vacíos');
+    // Verificar credenciales
+    $user = null;
+    foreach ($users as $userData) {
+        if ($userData['username'] === $username && $userData['password'] === $password) {
+            $user = $userData;
+            break;
+        }
     }
     
-    // Check if user exists
-    if (!isset($users[$username])) {
-        throw new Exception('Usuario no encontrado');
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Credenciales inválidas'
+        ]);
+        return;
     }
     
-    $user = $users[$username];
-    
-    // Verify password
-    if ($password !== $user['password']) {
-        throw new Exception('Contraseña incorrecta');
-    }
-    
-    // Create session
+    // Crear sesión
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['username'] = $user['username'];
-    $_SESSION['role'] = $user['role'];
+    $_SESSION['email'] = $user['email'];
+    $_SESSION['user_role'] = $user['role']; // Cambiar a user_role para consistencia
+    $_SESSION['company_id'] = $user['company_id'];
+    $_SESSION['permissions'] = $user['permissions'];
     $_SESSION['logged_in'] = true;
-    $_SESSION['login_time'] = time();
     
-    // Generate a simple token
-    $token = base64_encode($user['id'] . ':' . time() . ':' . $user['username']);
-    $_SESSION['token'] = $token;
+    // Generar token simple
+    $token = bin2hex(random_bytes(32));
+    $_SESSION['auth_token'] = $token;
     
-    $response = [
+    // Determinar dashboard de redirección
+    $dashboardUrl = $user['role'] === 'admin' ? '/views/admin-dashboard.html' : '/views/user-dashboard.html';
+    
+    echo json_encode([
         'success' => true,
-        'message' => 'Inicio de sesión exitoso',
-        'token' => $token,
+        'message' => 'Login exitoso',
         'user' => [
             'id' => $user['id'],
             'username' => $user['username'],
@@ -155,11 +161,9 @@ function handleLogin($users) {
             'company_id' => $user['company_id'],
             'permissions' => $user['permissions']
         ],
-        'timestamp' => date('Y-m-d H:i:s')
-    ];
-    
-    http_response_code(200);
-    echo json_encode($response);
+        'token' => $token,
+        'dashboard_url' => $dashboardUrl
+    ]);
 }
 
 function handleLogout() {

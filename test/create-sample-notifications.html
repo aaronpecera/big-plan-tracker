@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Sample Notifications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Notification System Test</h1>
+        <p>This tool creates sample notifications to test the notification system.</p>
+        
+        <div>
+            <button onclick="createTaskNotification()">Create Task Notification</button>
+            <button onclick="createDeadlineNotification()">Create Deadline Notification</button>
+            <button onclick="createSystemNotification()">Create System Notification</button>
+            <button onclick="loadNotifications()">Load All Notifications</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        function showResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function createTaskNotification() {
+            try {
+                const response = await fetch(`${API_BASE}/notifications.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'create',
+                        user_id: '507f1f77bcf86cd799439011', // Sample user ID
+                        type: 'task_assigned',
+                        title: 'New Task Assigned',
+                        message: 'You have been assigned a new task: "Complete project documentation"',
+                        data: {
+                            task_id: '507f1f77bcf86cd799439012',
+                            task_title: 'Complete project documentation',
+                            priority: 'high'
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showResult('✅ Task notification created successfully', 'success');
+                } else {
+                    showResult(`❌ Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createDeadlineNotification() {
+            try {
+                const response = await fetch(`${API_BASE}/notifications.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'create',
+                        user_id: '507f1f77bcf86cd799439011',
+                        type: 'deadline_approaching',
+                        title: 'Deadline Approaching',
+                        message: 'Task "Website redesign" is due in 2 hours',
+                        data: {
+                            task_id: '507f1f77bcf86cd799439013',
+                            task_title: 'Website redesign',
+                            deadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showResult('✅ Deadline notification created successfully', 'success');
+                } else {
+                    showResult(`❌ Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createSystemNotification() {
+            try {
+                const response = await fetch(`${API_BASE}/notifications.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'create',
+                        user_id: '507f1f77bcf86cd799439011',
+                        type: 'system',
+                        title: 'System Update',
+                        message: 'The notification system has been successfully implemented and is now active!',
+                        data: {
+                            version: '1.0.0',
+                            features: ['Real-time notifications', 'Toast messages', 'Notification history']
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showResult('✅ System notification created successfully', 'success');
+                } else {
+                    showResult(`❌ Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_BASE}/notifications.php?action=get&user_id=507f1f77bcf86cd799439011`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Loaded ${result.notifications.length} notifications`, 'success');
+                    result.notifications.forEach((notification, index) => {
+                        showResult(`📋 ${index + 1}. ${notification.title} - ${notification.message}`, 'info');
+                    });
+                } else {
+                    showResult(`❌ Error loading notifications: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-load notifications on page load
+        window.addEventListener('load', () => {
+            showResult('🚀 Notification test tool loaded. Click buttons to test the system.', 'info');
+        });
+    </script>
+</body>
+</html>
