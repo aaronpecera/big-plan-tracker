@@ -189,79 +189,81 @@
     </style>
 
     <script>
-        // Auto-redirect to login after 3 seconds
-        setTimeout(function() {
-            if (window.PageTransitions) {
-                PageTransitions.navigateTo('/login');
+        // Safe navigation function that waits for PageTransitions to be ready
+        function safeNavigateTo(url, fallbackDelay = 100) {
+            if (window.PageTransitions && typeof PageTransitions.navigateTo === 'function') {
+                PageTransitions.navigateTo(url);
+            } else if (window.pageTransitions && typeof window.pageTransitions.navigateWithTransition === 'function') {
+                window.pageTransitions.navigateWithTransition(url);
             } else {
-                window.location.href = '/login';
+                // If PageTransitions is not ready, wait a bit and try again
+                setTimeout(function() {
+                    if (window.PageTransitions && typeof PageTransitions.navigateTo === 'function') {
+                        PageTransitions.navigateTo(url);
+                    } else {
+                        window.location.href = url;
+                    }
+                }, fallbackDelay);
             }
-        }, 3000);
-        
-        // Also redirect if user clicks anywhere on the card (except manual access)
+        }
+
+        // Wait for DOM to be ready before setting up functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Auto-redirect to login after 3 seconds
+            setTimeout(function() {
+                safeNavigateTo('/login');
+            }, 3000);
+            
+            // Also redirect if user clicks anywhere on the card (except manual access)
             const card = document.querySelector('.macos-login-card');
-            const manualAccess = document.querySelector('.macos-btn');
             
             card.addEventListener('click', function(e) {
                 if (!e.target.closest('a')) {
-                    if (window.PageTransitions) {
-                        PageTransitions.navigateTo('/login');
-                    } else {
-                        window.location.href = '/login';
-                    }
+                    safeNavigateTo('/login');
                 }
             });
-        });
-        
-        // Check if system is working
-        fetch('/api/health')
-            .then(response => response.json())
-            .then(data => {
-                const statusElement = document.getElementById('systemStatus');
-                const loadingText = document.querySelector('.loading-text');
-                const container = document.querySelector('.macos-login-container');
-                
-                if (data.success) {
-                    // System working, show success state
-                    container.classList.add('system-ready');
-                    loadingText.textContent = 'Sistema listo ✓';
-                    statusElement.innerHTML = '<i class="fas fa-circle status-dot success"></i><span>MongoDB Conectado</span>';
+            
+            // Check if system is working
+            fetch('/api/health')
+                .then(response => response.json())
+                .then(data => {
+                    const statusElement = document.getElementById('systemStatus');
+                    const loadingText = document.querySelector('.loading-text');
+                    const container = document.querySelector('.macos-login-container');
                     
-                    setTimeout(function() {
-                        if (window.PageTransitions) {
-                            PageTransitions.navigateTo('/views/login.html');
-                        } else {
-                            window.location.href = '/views/login.html';
-                        }
-                    }, 1500);
-                } else {
-                    // Show error message
-                    container.classList.add('system-error');
-                    loadingText.textContent = 'Error de configuración';
-                    statusElement.innerHTML = '<i class="fas fa-circle status-dot error"></i><span>Verificar MongoDB</span>';
-                }
-            })
-            .catch(error => {
-                // Connection error, continue to login
-                console.log('Error checking system:', error);
-                const statusElement = document.getElementById('systemStatus');
-                const loadingText = document.querySelector('.loading-text');
-                const container = document.querySelector('.macos-login-container');
-                
-                container.classList.add('system-error');
-                loadingText.textContent = 'Iniciando sistema...';
-                statusElement.innerHTML = '<i class="fas fa-circle status-dot error"></i><span>API No Disponible</span>';
-                
-                // Auto-redirect after 5 seconds
-                setTimeout(function() {
-                    if (window.PageTransitions) {
-                        PageTransitions.navigateTo('/login');
+                    if (data.success) {
+                        // System working, show success state
+                        container.classList.add('system-ready');
+                        loadingText.textContent = 'Sistema listo ✓';
+                        statusElement.innerHTML = '<i class="fas fa-circle status-dot success"></i><span>MongoDB Conectado</span>';
+                        
+                        setTimeout(function() {
+                            safeNavigateTo('/views/login.html');
+                        }, 1500);
                     } else {
-                        window.location.href = '/login';
+                        // Show error message
+                        container.classList.add('system-error');
+                        loadingText.textContent = 'Error de configuración';
+                        statusElement.innerHTML = '<i class="fas fa-circle status-dot error"></i><span>Verificar MongoDB</span>';
                     }
-                }, 5000);
-            });
+                })
+                .catch(error => {
+                    // Connection error, continue to login
+                    console.log('Error checking system:', error);
+                    const statusElement = document.getElementById('systemStatus');
+                    const loadingText = document.querySelector('.loading-text');
+                    const container = document.querySelector('.macos-login-container');
+                    
+                    container.classList.add('system-error');
+                    loadingText.textContent = 'Iniciando sistema...';
+                    statusElement.innerHTML = '<i class="fas fa-circle status-dot error"></i><span>API No Disponible</span>';
+                    
+                    // Auto-redirect after 5 seconds
+                    setTimeout(function() {
+                        safeNavigateTo('/login');
+                    }, 5000);
+                });
+        });
     </script>
 </body>
 </html>
