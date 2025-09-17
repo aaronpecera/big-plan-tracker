@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIG PLAN - Sistema Interno de Gestión de Tareas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/myriad-font.css">
+    <link rel="stylesheet" href="/assets/css/macos-style.css">
+    <script src="/assets/js/page-transitions.js"></script>
+</head>
+<body class="myriad-font">
+    <div class="macos-login-container">
+        <div class="macos-login-card">
+            <div class="macos-logo">
+                <h1>🚀 BIG PLAN</h1>
+                <p>Sistema Interno de Gestión de Tareas</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage" style="display: none; background: var(--macos-gray-100); color: var(--macos-gray-700); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 14px;"></div>
+            <div class="success-message" id="successMessage" style="display: none; background: var(--macos-gray-100); color: var(--macos-gray-700); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 14px;"></div>
+            <div class="loading" id="loading" style="display: none; text-align: center; color: var(--macos-gray-600); margin-bottom: 1rem;">
+                <i class="fas fa-spinner fa-spin"></i> Conectando al sistema...
+            </div>
+            
+            <form id="loginForm">
+                <div class="macos-form-group">
+                    <label for="username" class="macos-label">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <input type="text" id="username" name="username" class="macos-input" required placeholder="Ingresa tu usuario">
+                </div>
+                
+                <div class="macos-form-group">
+                    <label for="password" class="macos-label">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <input type="password" id="password" name="password" class="macos-input" required placeholder="Ingresa tu contraseña">
+                </div>
+                
+                <button type="submit" class="macos-button macos-button-primary" id="loginBtn" style="width: 100%; margin-bottom: 1.5rem;">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </form>
+            
+            <div class="macos-system-status">
+                <span class="macos-status-indicator" id="statusIndicator"></span>
+                <span class="macos-status-text" id="statusText">Verificando estado del sistema...</span>
+            </div>
+            
+            <div class="macos-footer">
+                <div class="macos-footer-links">
+                    <a href="/" class="macos-footer-link"><i class="fas fa-home"></i> Inicio</a>
+                    <a href="mailto:aaron.gorman@grupopecera.com" class="macos-footer-link"><i class="fas fa-envelope"></i> Soporte</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Check system health on page load
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const indicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+                
+                if (data.success) {
+                    indicator.style.background = 'var(--macos-green)';
+                    statusText.textContent = 'Sistema En Línea - MongoDB Conectado';
+                } else {
+                    indicator.style.background = 'var(--macos-red)';
+                    statusText.textContent = 'Problemas del Sistema - Verificar Configuración';
+                }
+            } catch (error) {
+                const indicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+                indicator.style.background = 'var(--macos-red)';
+                statusText.textContent = 'API No Disponible';
+            }
+        }
+        
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            // Reset messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Show loading
+            loginBtn.disabled = true;
+            loginBtn.style.opacity = '0.6';
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successMessage.textContent = '¡Inicio de sesión exitoso! Redirigiendo...';
+                    successMessage.style.display = 'block';
+                    
+                    // Store token if provided
+                    if (data.token) {
+                        localStorage.setItem('authToken', data.token);
+                    }
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        if (window.PageTransitions) {
+                            PageTransitions.navigateTo('/views/dashboard.html');
+                        } else {
+                            window.location.href = '/views/dashboard.html';
+                        }
+                    }, 1500);
+                } else {
+                    errorMessage.textContent = data.message || 'Error de inicio de sesión. Por favor, inténtalo de nuevo.';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error de conexión. Por favor, verifica tu conexión a internet.';
+                errorMessage.style.display = 'block';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.style.opacity = '1';
+                loading.style.display = 'none';
+            }
+        });
+        
+        // Auto-fill demo credentials
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemHealth();
+            
+            // Auto-fill admin credentials for demo
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'admin123';
+        });
+    </script>
+</body>
+</html>
